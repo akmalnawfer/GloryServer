@@ -12,6 +12,7 @@ public class GloryServer {
     public static ServerSocket serverSocket;
     static Socket socket;
     static DataOutputStream out;
+    public int PlayerCount = 0;
     /**
      * @param args the command line arguments
      */
