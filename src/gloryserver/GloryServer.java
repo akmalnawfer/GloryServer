@@ -5,57 +5,80 @@
  */
 package gloryserver;
 
-import java.io.*;
 import java.net.*;
-import java.util.Date;
+import java.io.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+/**
+ *
+ * @author Arthath
+ */
 public class GloryServer {
-//    public static ServerSocket serverSocket;
-//    static Socket socket;
-//    static DataOutputStream out;
-//    public int PlayerCount = 0;
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String[] args) throws Exception {
-        ServerSocket listener = new ServerSocket(4000);
-        String line;
+    static ServerSocket serverSocket;
+    static Socket socket;
+    static DataOutputStream out;
+    static Users[] user = new Users[4];
+    static DataInputStream in;
+
+    public static void main(String[] args) {
         try {
+            System.out.println("Starting Server");
+            serverSocket = new ServerSocket(7777);
+            System.out.println("Server started...");
             while (true) {
-                Socket socket = listener.accept();
-                BufferedReader readerChannel = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                BufferedWriter writerChannel = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
-                try {
-                    writerChannel.write(new Date().toString() + "\n\r");
-                    writerChannel.flush();
-
-                    while ((line = readerChannel.readLine()) != null) {
-                        System.out.println(line);
+                socket = serverSocket.accept();
+                for (int i = 0; i < 4; i++) {
+                    System.out.println("Connection from:" + socket.getInetAddress());
+                    out = new DataOutputStream(socket.getOutputStream());
+                    in = new DataInputStream(socket.getInputStream());
+                    if (user[i] == null) {
+                        user[i] = new Users(out, in, user);
+                        Thread thread = new Thread(user[i]);
+                        thread.start();
+                        break;
                     }
-                } finally {
-                    socket.close();
                 }
             }
-        } finally {
-            listener.close();
+        } catch (IOException ex) {
+            Logger.getLogger(GloryServer.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-//        try{
-//         
-//            System.out.print("starting server....");
-//            serverSocket=new ServerSocket(7777);
-//            System.out.println("\n Server started...");
-//            socket=serverSocket.accept();  
-//            System.out.println("Connection from : "+socket.getInetAddress() );
-//            out=new DataOutputStream(socket.getOutputStream());
-//            out.writeUTF("this is a test java socket");
-//            System.out.println("data has been sent");
-//        }
-//        catch(Exception e)
-//        {
-//            
-//        }
-//    }
+}
 
+class Users implements Runnable {
+
+    DataOutputStream out;
+    DataInputStream in;
+    Users[] user = new Users[4];
+    String name;
+
+    public Users(DataOutputStream out, DataInputStream in, Users[] user) {
+
+        this.out = out;
+        this.in = in;
+        this.user = user;
+    }
+
+    public void run() {
+        try {
+            name = in.readUTF();
+        } catch (IOException ex) {
+            Logger.getLogger(Users.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        while (true) {
+            try {
+                String msg = in.readUTF();
+                for (int i = 0; i < 4; i++) {
+                    if (user[i] != null) {
+                        user[i].out.writeUTF(name + ":" + msg);
+                    }
+                }
+            } catch (IOException ex) {
+                this.out = null;
+                this.in = null;
+            }
+        }
+    }
 }
