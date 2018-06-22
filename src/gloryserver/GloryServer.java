@@ -19,7 +19,7 @@ public class GloryServer {
     static ServerSocket serverSocket;
     static Socket socket;
     static DataOutputStream out;
-    static Users[] user = new Users[4];
+    public static Users[] user = new Users[4];
     static DataInputStream in;
 
     public static void main(String[] args) {
@@ -30,11 +30,11 @@ public class GloryServer {
             while (true) {
                 socket = serverSocket.accept();
                 for (int i = 0; i < 4; i++) {
-                    System.out.println("Connection from:" + socket.getInetAddress());
-                    out = new DataOutputStream(socket.getOutputStream());
-                    in = new DataInputStream(socket.getInputStream());
                     if (user[i] == null) {
-                        user[i] = new Users(out, in, user);
+                        System.out.println("Connection from:" + socket.getInetAddress());
+                        out = new DataOutputStream(socket.getOutputStream());
+                        in = new DataInputStream(socket.getInputStream());
+                        user[i] = new Users(out, in, user, i);
                         Thread thread = new Thread(user[i]);
                         thread.start();
                         break;
@@ -53,31 +53,37 @@ class Users implements Runnable {
     DataInputStream in;
     Users[] user = new Users[4];
     String name;
+    int playerid;
+    int playeridin;
+    int playerscore;
 
-    public Users(DataOutputStream out, DataInputStream in, Users[] user) {
+    public Users(DataOutputStream out, DataInputStream in, Users[] user, int pid) {
 
         this.out = out;
         this.in = in;
         this.user = user;
+        this.playerid = pid;
     }
 
     public void run() {
         try {
-            name = in.readUTF();
+            out.writeInt(playerid);
         } catch (IOException ex) {
-            Logger.getLogger(Users.class.getName()).log(Level.SEVERE, null, ex);
+            System.out.println("Failed to send player Id");
         }
         while (true) {
             try {
-                String msg = in.readUTF();
+                playeridin = in.readInt();
+                playerscore=in.readInt();
                 for (int i = 0; i < 4; i++) {
                     if (user[i] != null) {
-                        user[i].out.writeUTF(name + ":" + msg);
+                        user[i].out.writeInt(playeridin);
+                        user[i].out.writeInt(playerscore);
                     }
                 }
             } catch (IOException ex) {
-                this.out = null;
-                this.in = null;
+                user[playerid] = null;
+                break;
             }
         }
     }
