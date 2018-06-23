@@ -7,8 +7,6 @@ package gloryserver;
 
 import java.net.*;
 import java.io.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
@@ -16,74 +14,53 @@ import java.util.logging.Logger;
  */
 public class GloryServer {
 
-    static ServerSocket serverSocket;
-    static Socket socket;
+    private static Socket socket;
     static DataOutputStream out;
-    public static Users[] user = new Users[4];
     static DataInputStream in;
+    static String Username;
+    static int NumberOfPlayers = 0;
+    static String[] connectedUsers = new String[4];
 
     public static void main(String[] args) {
         try {
-            System.out.println("Starting Server");
-            serverSocket = new ServerSocket(7777);
-            System.out.println("Server started...");
+            int port = 25000;
+            ServerSocket serverSocket = new ServerSocket(port);
+            System.out.println("Server Started and listening to the port 25000");
             while (true) {
                 socket = serverSocket.accept();
-                for (int i = 0; i < 4; i++) {
-                    if (user[i] == null) {
-                        System.out.println("Connection from:" + socket.getInetAddress());
-                        out = new DataOutputStream(socket.getOutputStream());
-                        in = new DataInputStream(socket.getInputStream());
-                        user[i] = new Users(out, in, user, i);
-                        Thread thread = new Thread(user[i]);
-                        thread.start();
-                        break;
-                    }
+
+                if (NumberOfPlayers < 4) {
+                    InputStream is = socket.getInputStream();
+                    InputStreamReader isr = new InputStreamReader(is);
+                    BufferedReader br = new BufferedReader(isr);
+                    String username = br.readLine();
+                    connectedUsers[NumberOfPlayers] = username;
+                    System.out.println("Message received from client is " + username);
+                    NumberOfPlayers++;
                 }
+
+                if (NumberOfPlayers >= 2 && NumberOfPlayers <= 4) {
+                    System.out.println("Staring for " + NumberOfPlayers + " players");
+//                    OutputStream os = socket.getOutputStream();
+//                    OutputStreamWriter osw = new OutputStreamWriter(os);
+//                    BufferedWriter bw = new BufferedWriter(osw);
+//                    bw.write(NumberOfPlayers+"\n");
+//                    System.out.println("Message sent to the client is " + NumberOfPlayers + "\n");
+//                    bw.flush();
+                }
+                OutputStream os = socket.getOutputStream();
+                    OutputStreamWriter osw = new OutputStreamWriter(os);
+                    BufferedWriter bw = new BufferedWriter(osw);
+                    bw.write(NumberOfPlayers+"\n");
+                    System.out.println("Message sent to the client is " + NumberOfPlayers + "\n");
+                    bw.flush();
             }
-        } catch (IOException ex) {
-            Logger.getLogger(GloryServer.class.getName()).log(Level.SEVERE, null, ex);
-        }
-    }
-}
-
-class Users implements Runnable {
-
-    DataOutputStream out;
-    DataInputStream in;
-    Users[] user = new Users[4];
-    String name;
-    int playerid;
-    int playeridin;
-    int playerscore;
-
-    public Users(DataOutputStream out, DataInputStream in, Users[] user, int pid) {
-
-        this.out = out;
-        this.in = in;
-        this.user = user;
-        this.playerid = pid;
-    }
-
-    public void run() {
-        try {
-            out.writeInt(playerid);
-        } catch (IOException ex) {
-            System.out.println("Failed to send player Id");
-        }
-        while (true) {
+        } catch (Exception e) {
+            System.out.println(e.getStackTrace());
+        } finally {
             try {
-                playeridin = in.readInt();
-                playerscore=in.readInt();
-                for (int i = 0; i < 4; i++) {
-                    if (user[i] != null) {
-                        user[i].out.writeInt(playeridin);
-                        user[i].out.writeInt(playerscore);
-                    }
-                }
-            } catch (IOException ex) {
-                user[playerid] = null;
-                break;
+                socket.close();
+            } catch (IOException e) {
             }
         }
     }
