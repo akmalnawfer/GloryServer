@@ -20,7 +20,7 @@ public class GloryServer {
     static DataInputStream in;
     static String Username;
     static int NumberOfPlayers = 0;
-    static String[] connectedUsers = new String[4];
+    static String[] connectedUsers = new String[10000];
     static boolean firstPlayer = false;
 
     public static void main(String[] args) {
@@ -60,7 +60,7 @@ public class GloryServer {
                                 //continue ;
                             }
 
-                            if (NumberOfPlayers < 4) {
+                            if (NumberOfPlayers < 10000) {
 
                                 if (NumberOfPlayers == 0) {
                                     connectedUsers[NumberOfPlayers] = username1;
